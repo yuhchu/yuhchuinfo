@@ -241,6 +241,35 @@ section{padding:clamp(64px,9vw,104px) 5%}
 .tdot{width:5px;height:5px;border-radius:3px;background:var(--b2);transition:background .3s,width .3s;-webkit-appearance:none}
 .tdot.o{background:var(--a);width:18px}
 @keyframes fi{from{opacity:0}to{opacity:1}}
+/* TESTIMONIAL CARDS */
+.test-card{
+  display:none;text-align:center;padding:0 16px;
+  animation:fi .5s ease;
+}
+.test-card.o{display:block}
+.test-avatar{
+  width:64px;height:64px;border-radius:50%;
+  margin:0 auto 16px;overflow:hidden;
+  border:2px solid var(--a);
+  background:var(--card, #141414);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.test-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.test-avatar-init{
+  font-family:var(--fd);font-size:1.4rem;font-weight:300;
+  color:var(--a);line-height:1;
+}
+.tq{font-family:var(--fd);font-size:clamp(1rem,2.8vw,1.48rem);font-style:italic;font-weight:300;color:var(--s);line-height:1.75;margin-bottom:24px}
+.tq::before{content:'"';display:block;font-size:clamp(2.2rem,5vw,3.2rem);color:var(--a);line-height:.55;margin-bottom:12px}
+.star{color:var(--a);letter-spacing:3px;font-size:.88rem;margin-bottom:16px}
+.tn{font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--g)}
+.tr{font-size:.73rem;margin-top:3px;color:#4a4a4a}
+.dotwrap{display:flex;gap:5px;justify-content:center;margin-top:28px}
+.tdot{width:5px;height:5px;border-radius:3px;background:var(--b2);transition:background .3s,width .3s;-webkit-appearance:none}
+.tdot.o{background:var(--a);width:18px}
+.test-loading{text-align:center;padding:60px 20px}
+
 /* BOOKING */
 #booking{background:var(--d)}
 .bw{display:grid;grid-template-columns:1fr 1.1fr;gap:clamp(36px,6vw,80px);align-items:start;max-width:1140px;margin:0 auto}
@@ -450,13 +479,17 @@ footer{background:var(--d);border-top:1px solid var(--b);padding:clamp(36px,5vw,
 
 <!-- TESTIMONIALS -->
 <section id="testimonials">
-  <div class="th rv"><p class="ey" data-i="te.ey">Testimonials</p><h2 class="st" data-i="te.ti">Client Stories</h2><div class="sd"></div></div>
-  <div class="tt">
-    <div class="ts o"><div class="star">★★★★★</div><p class="tq" data-i="t1.q"></p><div class="tn" data-i="t1.n">Linh &amp; Minh</div><div class="tr" data-i="t1.r">Couple Session · Hanoi</div></div>
-    <div class="ts"><div class="star">★★★★★</div><p class="tq" data-i="t2.q"></p><div class="tn">Nguyễn Thu Hà</div><div class="tr" data-i="t2.r">Graduation Session</div></div>
-    <div class="ts"><div class="star">★★★★★</div><p class="tq" data-i="t3.q"></p><div class="tn">Phạm Bảo Châu</div><div class="tr" data-i="t3.r">Áo dài Session</div></div>
-    <div class="ts"><div class="star">★★★★★</div><p class="tq" data-i="t4.q"></p><div class="tn">Trần Gia Bảo</div><div class="tr" data-i="t4.r">Creative Concept Session</div></div>
-    <div class="dotwrap" id="tdots"></div>
+  <div class="th rv">
+    <p class="ey" data-i="te.ey">Testimonials</p>
+    <h2 class="st" data-i="te.ti">Client Stories</h2>
+    <div class="sd"></div>
+  </div>
+  <div class="tt" id="testWrap">
+    <!-- Rendered by JS from Excel/Drive -->
+    <div class="test-loading">
+      <div class="spin" style="width:24px;height:24px;border:1px solid #2a2a2a;border-top-color:#c9a96e;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px"></div>
+      <p style="font-size:.72rem;letter-spacing:.15em;color:#555;text-transform:uppercase">Loading reviews...</p>
+    </div>
   </div>
 </section>
 
@@ -563,7 +596,7 @@ footer{background:var(--d);border-top:1px solid var(--b);padding:clamp(36px,5vw,
 // =====================================================
 // Sau khi deploy Apps Script, dán URL vào đây:
 // Ví dụ: 'https://script.google.com/macros/s/AKfy.../exec'
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwyFhSgJCOa88bQbfWiFby-1LUZlXyT1DWgP0Up-08mq_iODaYJZlhQhQBXYiyCA_x3/exec';   // ← DÁN URL VÀO ĐÂY
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxcg6yrwLUKNHzqAPvaZ1-91blWzU2FNwawqej-ocsljDS1uvrYkQusRP-z-22LI7Ug/exec';   // ← DÁN URL VÀO ĐÂY
 // =====================================================
 
 // ── i18n ──────────────────────────────────────────
@@ -829,14 +862,24 @@ document.getElementById('lb').addEventListener('touchend',e=>{const dx=e.changed
 
 // ── LOAD GALLERY ──────────────────────────────────
 async function loadGallery(){
-  if(!APPS_SCRIPT_URL){showGalSetup();return;}
+  if(!APPS_SCRIPT_URL){showGalSetup();renderTestimonials(FALLBACK_REVIEWS);return;}
   showGalLoading();
   try{
     const res=await fetch(APPS_SCRIPT_URL);
     const data=await res.json();
-    if(data.ok&&data.folders)renderFolders(data.folders);
-    else showGalError(data.error||T('gal.err'));
-  }catch(e){showGalError(T('gal.err'));}
+    if(data.ok){
+      if(data.folders)renderFolders(data.folders);
+      else showGalError(data.error||T('gal.err'));
+      // Render reviews (từ Excel Drive hoặc fallback)
+      renderTestimonials(data.reviews&&data.reviews.length>0 ? data.reviews : FALLBACK_REVIEWS);
+    } else {
+      showGalError(data.error||T('gal.err'));
+      renderTestimonials(FALLBACK_REVIEWS);
+    }
+  }catch(e){
+    showGalError(T('gal.err'));
+    renderTestimonials(FALLBACK_REVIEWS);
+  }
 }
 loadGallery();
 
