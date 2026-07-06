@@ -916,11 +916,16 @@ async function loadGallery(){
 loadGallery();
 
 // ── TESTIMONIALS ──────────────────────────────────
-const TS=document.querySelectorAll('.ts'),tdots=document.getElementById('tdots');
-let at=0;
-TS.forEach((_,i)=>{const d=document.createElement('button');d.className='tdot'+(i===0?' o':'');d.addEventListener('click',()=>gT(i));tdots.appendChild(d);});
-function gT(n){TS[at].classList.remove('o');document.querySelectorAll('.tdot')[at].classList.remove('o');at=n;TS[at].classList.add('o');document.querySelectorAll('.tdot')[at].classList.add('o');}
-setInterval(()=>gT((at+1)%TS.length),5000);
+function gT(n){
+  const cards=document.querySelectorAll('#testWrap .test-card');
+  const dots=document.querySelectorAll('#tdots .tdot');
+  if(!cards.length)return;
+  cards[testIdx]&&cards[testIdx].classList.remove('o');
+  dots[testIdx]&&dots[testIdx].classList.remove('o');
+  testIdx=((n%cards.length)+cards.length)%cards.length;
+  cards[testIdx].classList.add('o');
+  dots[testIdx]&&dots[testIdx].classList.add('o');
+}
 
 // ── FORM ──────────────────────────────────────────
 function cP(){document.getElementById('pop').classList.remove('o');}
