@@ -396,8 +396,8 @@ footer{background:var(--d);border-top:1px solid var(--b);padding:clamp(36px,5vw,
     <li><a href="#contact"   data-i="nav.ct">Contact</a></li>
   </ul>
   <div class="lt">
-    <button id="lEN" class="on" onclick="SL('en')">EN</button>
-    <button id="lVI" onclick="SL('vi')">VI</button>
+    <button id="lEN" onclick="SL('en')">EN</button>
+    <button id="lVI" class="on" onclick="SL('vi')">VI</button>
   </div>
   <a href="#booking" class="nc" data-i="nav.now">Book Now</a>
   <button class="hb" id="hb" aria-label="Menu"><span></span><span></span><span></span></button>
@@ -412,8 +412,8 @@ footer{background:var(--d);border-top:1px solid var(--b);padding:clamp(36px,5vw,
   <a href="#booking"   data-i="nav.bk"    onclick="cM()">Booking</a>
   <a href="#contact"   data-i="nav.ct"    onclick="cM()">Contact</a>
   <div class="ml">
-    <button id="mlEN" class="on" onclick="SL('en');cM()">EN</button>
-    <button id="mlVI"            onclick="SL('vi');cM()">VI</button>
+    <button id="mlEN" onclick="SL('en');cM()">EN</button>
+    <button id="mlVI" class="on"   onclick="SL('vi');cM()">VI</button>
   </div>
 </div>
 
@@ -667,7 +667,7 @@ vi:{
 'gal.empty':'Chưa có ảnh trong thư mục này.','gal.err':'Không thể tải gallery. Kiểm tra lại URL Apps Script.',
 }
 };
-let lang='en';
+let lang='vi';
 const T=k=>S[lang][k]||S.en[k]||k;
 function AL(){
   document.querySelectorAll('[data-i]').forEach(el=>el.innerHTML=T(el.dataset.i));
@@ -861,6 +861,39 @@ document.getElementById('lb').addEventListener('touchstart',e=>{lbTx=e.touches[0
 document.getElementById('lb').addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-lbTx;if(Math.abs(dx)>50)lbGo(dx<0?1:-1);},{passive:true});
 
 // ── LOAD GALLERY ──────────────────────────────────
+// ── TESTIMONIALS ──────────────────────────────────────
+const FALLBACK_REVIEWS=[
+  {name:'Linh & Minh',role:'Couple · Hà Nội',review:"YuhChu chụp rất tự nhiên, mỗi khung hình như một bức tranh. Không thể hoàn hảo hơn!",rating:5,avatar:''},
+  {name:'Nguyễn Thu Hà',role:'Tốt nghiệp',review:'Ảnh tốt nghiệp vượt quá mọi kỳ vọng. Ánh sáng, bố cục đều tuyệt vời. Rất khuyến khích!',rating:5,avatar:''},
+  {name:'Phạm Bảo Châu',role:'Áo dài · Hồ Gươm',review:'Ảnh áo dài đẹp như trên tạp chí. YuhChu rất kiên nhẫn và giúp mình tự tin hơn rất nhiều.',rating:5,avatar:''},
+  {name:'Trần Gia Bảo',role:'Creative Concept',review:'Buổi chụp concept cực kỳ chuyên nghiệp và sáng tạo. Chắc chắn sẽ quay lại lần sau!',rating:5,avatar:''},
+];
+let testSlides=[],testIdx=0,testTimer=null;
+function starsHTML(n){return '★'.repeat(Math.min(5,Math.max(1,n||5)))+'☆'.repeat(Math.max(0,5-n));}
+function initials(name){return name.split(/[\s&]+/).filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');}
+function renderTestimonials(reviews){
+  const wrap=document.getElementById('testWrap');
+  if(!wrap)return;
+  if(!reviews||reviews.length===0)reviews=FALLBACK_REVIEWS;
+  testSlides=reviews;
+  let html=reviews.map((r,i)=>`
+    <div class="test-card${i===0?' o':''}">
+      <div class="test-avatar">
+        ${r.avatar
+          ?`<img src="${r.avatar}" alt="${r.name}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\"test-avatar-init\">${initials(r.name)}</div>'">`
+          :`<div class="test-avatar-init">${initials(r.name)}</div>`}
+      </div>
+      <div class="star">${starsHTML(r.rating)}</div>
+      <p class="tq">${r.review}</p>
+      <div class="tn">${r.name}</div>
+      <div class="tr">${r.role||''}</div>
+    </div>`).join('');
+  html+=`<div class="dotwrap" id="tdots">`+reviews.map((_,i)=>`<button class="tdot${i===0?' o':''}" onclick="gT(${i})"></button>`).join('')+`</div>`;
+  wrap.innerHTML=html;
+  if(testTimer)clearInterval(testTimer);
+  testTimer=setInterval(function(){gT((testIdx+1)%testSlides.length);},5000);
+}
+// ── LOAD GALLERY ──────────────────────────────────
 async function loadGallery(){
   if(!APPS_SCRIPT_URL){showGalSetup();renderTestimonials(FALLBACK_REVIEWS);return;}
   showGalLoading();
@@ -870,9 +903,8 @@ async function loadGallery(){
     if(data.ok){
       if(data.folders)renderFolders(data.folders);
       else showGalError(data.error||T('gal.err'));
-      // Render reviews (từ Excel Drive hoặc fallback)
-      renderTestimonials(data.reviews&&data.reviews.length>0 ? data.reviews : FALLBACK_REVIEWS);
-    } else {
+      renderTestimonials(data.reviews&&data.reviews.length>0?data.reviews:FALLBACK_REVIEWS);
+    }else{
       showGalError(data.error||T('gal.err'));
       renderTestimonials(FALLBACK_REVIEWS);
     }
@@ -892,28 +924,51 @@ setInterval(()=>gT((at+1)%TS.length),5000);
 
 // ── FORM ──────────────────────────────────────────
 function cP(){document.getElementById('pop').classList.remove('o');}
-document.getElementById('bkForm').addEventListener('submit',async function(e){
-  e.preventDefault();
-  const btn=document.getElementById('bsub');
-  const ok=document.getElementById('fsOk'),er=document.getElementById('fsErr');
-  ok.classList.remove('show');er.classList.remove('show');
-  const r=document.createElement('span');r.className='rip';
-  const rect=btn.getBoundingClientRect();const sz=Math.max(rect.width,rect.height);
-  r.style.cssText=`width:${sz}px;height:${sz}px;left:${sz/2*-1+rect.width/2}px;top:${sz/2*-1+rect.height/2}px`;
-  btn.appendChild(r);setTimeout(()=>r.remove(),600);
-  btn.disabled=true;btn.textContent='Sending...';
-  const formId=this.action.split('/f/')[1];
-  if(!formId||formId==='YOUR_FORM_ID'){
-    setTimeout(()=>{btn.disabled=false;btn.innerHTML=T('fo.sb');document.getElementById('pop').classList.add('o');},800);
-    return;
-  }
-  try{
-    const res=await fetch(this.action,{method:'POST',body:new FormData(this),headers:{'Accept':'application/json'}});
-    if(res.ok){ok.classList.add('show');this.reset();}
-    else er.classList.add('show');
-  }catch{er.classList.add('show');}
-  btn.disabled=false;btn.innerHTML=T('fo.sb');
-});
+(function(){
+  var form=document.getElementById('bkForm');
+  if(!form)return;
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    var btn=document.getElementById('bsub');
+    var ok=document.getElementById('fsOk');
+    var er=document.getElementById('fsErr');
+    ok.classList.remove('show');
+    er.classList.remove('show');
+    var rip=document.createElement('span');
+    rip.className='rip';
+    var rect=btn.getBoundingClientRect();
+    var sz=Math.max(rect.width,rect.height);
+    rip.style.width=sz+'px';rip.style.height=sz+'px';
+    rip.style.left=(rect.width/2-sz/2)+'px';rip.style.top=(rect.height/2-sz/2)+'px';
+    btn.appendChild(rip);
+    setTimeout(function(){if(rip.parentNode)rip.parentNode.removeChild(rip);},600);
+    btn.disabled=true;
+    btn.textContent='Đang gửi...';
+    var action=form.getAttribute('action')||'';
+    var parts=action.split('/f/');
+    var formId=parts.length>1?parts[1]:'';
+    if(!formId||formId==='YOUR_FORM_ID'){
+      setTimeout(function(){
+        btn.disabled=false;
+        btn.innerHTML=T('fo.sb');
+        var pop=document.getElementById('pop');
+        if(pop)pop.classList.add('o');
+      },900);
+      return;
+    }
+    var fd=new FormData(form);
+    fetch(action,{method:'POST',body:fd,headers:{'Accept':'application/json'}})
+    .then(function(res){
+      if(res.ok){ok.classList.add('show');form.reset();}
+      else{er.classList.add('show');}
+    })
+    .catch(function(){er.classList.add('show');})
+    .finally(function(){
+      btn.disabled=false;
+      btn.innerHTML=T('fo.sb');
+    });
+  });
+})();
 
 // ── COUNTERS ──────────────────────────────────────
 let counted=false;
