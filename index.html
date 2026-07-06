@@ -284,6 +284,9 @@ section{padding:clamp(64px,9vw,104px) 5%}
 .fg2 label{font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--g)}
 .fg2 input,.fg2 select,.fg2 textarea{background:var(--c);border:1px solid var(--b);color:var(--w);padding:12px 14px;border-radius:4px;font-family:var(--fb);font-size:.86rem;font-weight:300;transition:border-color .3s;outline:none;width:100%;-webkit-appearance:none;appearance:none}
 .fg2 input:focus,.fg2 select:focus,.fg2 textarea:focus{border-color:var(--a)}
+.fg2 input.finv,.fg2 select.finv,.fg2 textarea.finv{border-color:#d9534f}
+.ferr{display:none;font-size:.68rem;color:#e08080;letter-spacing:.02em}
+.ferr.show{display:block}
 .fg2 select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23777'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
 .fg2 select option{background:#141414;color:#f4f4f4}
 .fg2 textarea{resize:vertical;min-height:100px}
@@ -510,10 +513,10 @@ footer{background:var(--d);border-top:1px solid var(--b);padding:clamp(36px,5vw,
     <div class="rr">
       <form id="bkForm" action="https://formspree.io/f/xgojrnag" method="POST" novalidate>
         <div class="fg">
-          <div class="fg2"><label data-i="fo.nm">Full Name</label><input type="text" name="name" required data-i-p="fo.nmp" placeholder="Your full name"></div>
-          <div class="fg2"><label data-i="fo.ph">Phone Number</label><input type="tel" name="phone" required placeholder="0xxx xxx xxx"></div>
-          <div class="fg2"><label data-i="fo.fb">Facebook</label><input type="text" name="facebook" placeholder="facebook.com/yourname"></div>
-          <div class="fg2"><label data-i="fo.em">Email</label><input type="email" name="email" placeholder="your@email.com"></div>
+          <div class="fg2"><label data-i="fo.nm">Full Name</label><input id="f-name" type="text" name="name" required data-i-p="fo.nmp" placeholder="Your full name"><span class="ferr" id="e-name">Vui lòng nhập họ tên</span></div>
+          <div class="fg2"><label data-i="fo.ph">Phone Number</label><input id="f-phone" type="tel" name="phone" required placeholder="0xxx xxx xxx"><span class="ferr" id="e-phone">Số điện thoại không hợp lệ</span></div>
+          <div class="fg2"><label data-i="fo.fb">Facebook</label><input id="f-facebook" type="text" name="facebook" placeholder="facebook.com/yourname"><span class="ferr" id="e-facebook">Link Facebook không hợp lệ</span></div>
+          <div class="fg2"><label data-i="fo.em">Email</label><input id="f-email" type="email" name="email" placeholder="your@email.com"><span class="ferr" id="e-email">Email không hợp lệ</span></div>
           <div class="fg2"><label data-i="fo.dt">Shooting Date</label><input type="date" name="date"></div>
           <div class="fg2"><label data-i="fo.ty">Photography Type</label>
             <select name="type">
@@ -932,8 +935,51 @@ function cP(){document.getElementById('pop').classList.remove('o');}
 (function(){
   var form=document.getElementById('bkForm');
   if(!form)return;
+
+  function fbValid(v){
+    v=(v||'').trim();
+    if(v==='')return true; // Facebook không bắt buộc
+    if(/\s/.test(v))return false;
+    var linkPattern=/^(https?:\/\/)?(www\.)?(facebook\.com|fb\.com)\/[A-Za-z0-9_.\-]+\/?$/i;
+    var namePattern=/^[A-Za-z0-9_.\-]{3,}$/;
+    return linkPattern.test(v)||namePattern.test(v);
+  }
+  var validators={
+    'f-name':function(v){return v.trim().length>=2;},
+    'f-phone':function(v){var d=v.trim().replace(/[\s.\-]/g,'');return /^(\+84|0)(3|5|7|8|9)\d{8}$/.test(d);},
+    'f-facebook':fbValid,
+    'f-email':function(v){v=v.trim();return v===''||/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);}
+  };
+  var errIds={'f-name':'e-name','f-phone':'e-phone','f-facebook':'e-facebook','f-email':'e-email'};
+
+  function checkField(id){
+    var el=document.getElementById(id);
+    if(!el)return true;
+    var isOk=validators[id](el.value);
+    var err=document.getElementById(errIds[id]);
+    if(isOk){el.classList.remove('finv');if(err)err.classList.remove('show');}
+    else{el.classList.add('finv');if(err)err.classList.add('show');}
+    return isOk;
+  }
+  function checkAll(){
+    var allOk=true;
+    Object.keys(validators).forEach(function(id){if(!checkField(id))allOk=false;});
+    return allOk;
+  }
+  Object.keys(validators).forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el)return;
+    el.addEventListener('blur',function(){checkField(id);});
+    el.addEventListener('input',function(){if(el.classList.contains('finv'))checkField(id);});
+  });
+
   form.addEventListener('submit',function(e){
     e.preventDefault();
+    if(!checkAll()){
+      var firstInvalid=form.querySelector('.finv');
+      if(firstInvalid)firstInvalid.focus();
+      return;
+    }
     var btn=document.getElementById('bsub');
     var ok=document.getElementById('fsOk');
     var er=document.getElementById('fsErr');
